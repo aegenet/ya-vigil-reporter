@@ -1,3 +1,4 @@
+[![npm version](https://img.shields.io/npm/v/@aegenet/ya-vigil-reporter.svg)](https://www.npmjs.com/package/@aegenet/ya-vigil-reporter)
 [![Build Status](https://github.com/aegenet/ya-vigil-reporter/actions/workflows/ci.yml/badge.svg)](https://github.com/aegenet/ya-vigil-reporter/actions)
 [![codecov](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graph/badge.svg?token=NRN5ODOY91)](https://codecov.io/gh/aegenet/ya-vigil-reporter)
 <br />
@@ -21,9 +22,9 @@ An alternative to [`node-vigil-reporter`](https://github.com/valeriansaliou/node
 ## 💾 Installation
 
 ```shell
-yarn add @aegenet/ya-vigil-reporter
+yarn add @aegenet/ya-vigil-reporter@~1
 # or
-npm i @aegenet/ya-vigil-reporter
+npm i @aegenet/ya-vigil-reporter@~1
 ```
 
 ## 📝 Usage
