@@ -1,7 +1,7 @@
 import * as assert from 'node:assert';
-import { YaWorkload } from './index';
+import { YaWorkload } from '../index';
 
-async function delay(duration: number) {
+export async function delay(duration: number) {
   await new Promise(resolve => setTimeout(resolve, duration));
 }
 

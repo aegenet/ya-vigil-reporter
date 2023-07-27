@@ -32,11 +32,13 @@ export interface YaVigilReporterOptions {
   console?: YaVigilReporterLogger | undefined | null;
 
   /** OnTick */
-  onTick?: (data: {
-    error?: Error;
-    /** body sent to Vigil */
-    bodySent?: YaVigilReportBody;
-  }) => void;
+  onTick?: (data: YaVigilReportResult) => void;
+}
+
+export interface YaVigilReportResult {
+  error?: Error;
+  /** body sent to Vigil */
+  bodySent?: YaVigilReportBody;
 }
 
 /** Assert Options */

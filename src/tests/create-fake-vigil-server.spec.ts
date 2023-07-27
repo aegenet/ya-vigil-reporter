@@ -1,4 +1,5 @@
 import fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+import { delay } from '../utils/ya-workload.spec';
 
 export function createFakeVigilServer() {
   const server = fastify({ logger: true });
@@ -23,6 +24,9 @@ export function createFakeVigilServer() {
         throw new Error('Invalid empty load!');
       }
 
+      if (probe_id === 'timeout') {
+        await delay(3000);
+      }
       if (probe_id === 'invalid') {
         throw new Error('Invalid probe_id!');
       }
@@ -49,6 +53,9 @@ export function createFakeVigilServer() {
       }
       if (!replica) {
         throw new Error('Invalid empty replica (replica_id)!');
+      }
+      if (probe_id === 'timeout') {
+        await delay(3000);
       }
       if (probe_id === 'invalid') {
         throw new Error('Invalid probe_id!');

@@ -1,11 +1,16 @@
-import { assertVigilReporterOptions, type YaVigilReporterOptions } from './ya-vigil-reporter-options';
-import { YaWorkload, type YaWorkloadResult } from './ya-workload';
-import { YaVigilReportBody } from './ya-vigil-report-body';
+import { assertVigilReporterOptions, YaVigilReportResult, type YaVigilReporterOptions } from './models/ya-vigil-reporter-options';
+import { YaWorkload, type YaWorkloadResult } from './utils/ya-workload';
+import type { YaVigilReportBody } from './models/ya-vigil-report-body';
+import type { IYaVigilReporter } from './i-ya-vigil-reporter';
+import { yaFetchWTimeout } from './utils/ya-fetch-w-timeout';
 
 /**
  * Yet Another Vigil Reporter
  */
-export class YaVigilReporter {
+export class YaVigilReporter implements IYaVigilReporter {
+  /** 15s */
+  private static readonly _DEFAULT_TIMEOUT_MS: number = 15000;
+
   private readonly _workload: YaWorkload = new YaWorkload();
   private readonly _baseURL: string;
   private readonly _reporterAuthz: string;
@@ -26,8 +31,8 @@ export class YaVigilReporter {
     assertVigilReporterOptions(this._options);
 
     this._intervalMs = _options.interval * 1000;
-    // The default delay is 8 seconds. If the interval is less than 8, the value will be intervalMs div by 2.
-    this._timeoutMs = _options.interval < 8 ? this._intervalMs / 2 : 8000;
+    // The default delay is 15 seconds. If the interval is less than 15, the value will be intervalMs div by 2.
+    this._timeoutMs = _options.interval < 15 ? this._intervalMs / 2 : YaVigilReporter._DEFAULT_TIMEOUT_MS;
     const { url, probe_id, node_id, token } = _options;
 
     let baseURL = url;
@@ -43,9 +48,9 @@ export class YaVigilReporter {
     };
   }
 
-  /** Start the Vigil */
-  public async start(args?: { ensure?: boolean }) {
-    this.end();
+  /** @inheritdoc */
+  public async start(args?: { ensure?: boolean }): Promise<void> {
+    await this.stop();
 
     this._options.logger?.info?.('ya-vigil-reporter.start');
     const ensureConfig = args?.ensure ?? false;
@@ -68,8 +73,8 @@ export class YaVigilReporter {
     }, this._intervalMs);
   }
 
-  /** Stop the Vigil */
-  public async stop(args?: { flush?: boolean }) {
+  /** @inheritdoc */
+  public async stop(args?: { flush?: boolean }): Promise<void> {
     if (this._cron) {
       this._options.logger?.info?.('ya-vigil-reporter.stop');
       clearInterval(this._cron);
@@ -81,10 +86,10 @@ export class YaVigilReporter {
     this._currentCpuUsage = undefined;
   }
 
-  /** Stop the Vigil (legacy way, bad way) */
-  public end(args?: { flush?: boolean; done?: (error?: Error) => void }): void {
+  /** @inheritdoc */
+  public async end(args?: { flush?: boolean; done?: (error?: Error) => void }): Promise<void> {
     args ||= {};
-    this.stop(args)
+    await this.stop(args)
       .then(() => {
         args!.done?.();
       })
@@ -93,24 +98,19 @@ export class YaVigilReporter {
       });
   }
 
-  /** Cron is running ? */
+  /** @inheritdoc */
   public get isRunning(): boolean {
     return !!this._cron;
   }
 
-  /** Manual reporting */
-  public async report(args?: { /** @default true */ reThrow?: boolean }): Promise<{
-    /** if reThrow is false */
-    error?: Error;
-    /** body sent to Vigil */
-    bodySent?: YaVigilReportBody;
-  }> {
+  /** @inheritdoc */
+  public async report(args?: { /** @default true */ reThrow?: boolean }): Promise<YaVigilReportResult> {
     this._options.logger?.info?.('ya-vigil-reporter.report');
 
     args ||= {};
     args.reThrow ??= true;
     let reportBody: YaVigilReportBody | undefined;
-
+    let timeoutToken;
     try {
       if (!this._currentCpuUsage) {
         // init
@@ -123,23 +123,24 @@ export class YaVigilReporter {
         load: this._currentCpuUsage || this._workload.getCurrentUsage(),
       };
 
-      const controller = new AbortController();
-      const timeoutToken = setTimeout(() => controller.abort(), this._timeoutMs);
-
-      const resp = await fetch(this._baseURL, {
-        method: 'POST',
-        headers: this._reporterHeader,
-        signal: controller.signal,
-        body: JSON.stringify(reportBody),
-      });
-      clearTimeout(timeoutToken);
-      await this._handleResponse(resp);
+      await yaFetchWTimeout(
+        this._baseURL,
+        {
+          method: 'POST',
+          headers: this._reporterHeader,
+          body: JSON.stringify(reportBody),
+        },
+        this._timeoutMs
+      );
 
       return {
         error: undefined,
         bodySent: reportBody,
       };
     } catch (error) {
+      if (timeoutToken) {
+        clearTimeout(timeoutToken);
+      }
       this._options.logger?.error('ya-vigil-reporter.report', error);
       if (args?.reThrow) {
         throw error;
@@ -152,42 +153,43 @@ export class YaVigilReporter {
     }
   }
 
-  /** Flush the replica */
-  public async flush(options?: { /** @default true */ reThrow?: boolean }): Promise<{
+  /** @inheritdoc */
+  public async flush(args?: { /** @default true */ reThrow?: boolean; timeout?: number }): Promise<{
     error?: Error;
   }> {
-    options ||= {};
-    options.reThrow ??= true;
+    args ||= {};
+    args.reThrow ??= true;
+
+    let timeoutToken;
     try {
       this._options.logger?.info?.('ya-vigil-reporter.flush');
-      await this._handleResponse(
-        await fetch(this._baseURL + '/' + encodeURIComponent(this._options.replica_id), {
+
+      await yaFetchWTimeout(
+        this._baseURL + '/' + encodeURIComponent(this._options.replica_id),
+        {
           method: 'DELETE',
           headers: {
             Authorization: this._reporterAuthz,
           },
-        })
+        },
+        args.timeout || YaVigilReporter._DEFAULT_TIMEOUT_MS
       );
       return {
         error: undefined,
       };
     } catch (error) {
+      console.dir(error);
+      if (timeoutToken) {
+        clearTimeout(timeoutToken);
+      }
       this._options.logger?.error('ya-vigil-reporter.flush', error);
-      if (options?.reThrow) {
+      if (args?.reThrow) {
+        console.log('reThrow');
         throw error;
       } else {
         return {
           error: error as Error,
         };
-      }
-    }
-  }
-
-  private async _handleResponse(resp: Response): Promise<void> {
-    if (resp) {
-      if (!resp.ok) {
-        const respText = await resp.text();
-        throw new Error(`${resp.statusText} (${resp.status}): ${respText}`);
       }
     }
   }

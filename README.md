@@ -1,12 +1,12 @@
 [![Build Status](https://github.com/aegenet/ya-vigil-reporter/actions/workflows/ci.yml/badge.svg)](https://github.com/aegenet/ya-vigil-reporter/actions)
-[![codecov](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graph/badge.svg?token=PLACEHOLDER)](https://codecov.io/gh/aegenet/ya-vigil-reporter)
+[![codecov](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graph/badge.svg?token=NRN5ODOY91)](https://codecov.io/gh/aegenet/ya-vigil-reporter)
 <br />
 
 # Yet Another Vigil Reporter
 
 An alternative to [`node-vigil-reporter`](https://github.com/valeriansaliou/node-vigil-reporter).
 
-  "Vigil is an open-source Status Page you can host on your infrastructure, used to monitor all your servers and apps, and visible to your users (on a domain of your choice, eg. status.example.com)." https://github.com/valeriansaliou/vigil
+>  _"Vigil is an open-source Status Page you can host on your infrastructure, used to monitor all your servers and apps, and visible to your users (on a domain of your >  choice, eg. status.example.com)."_ https://github.com/valeriansaliou/vigil
 
 
 ## ≠ Notable difference with `node-vigil-reporter`
@@ -16,11 +16,6 @@ An alternative to [`node-vigil-reporter`](https://github.com/valeriansaliou/node
 - You can call the `report` method manually.
 - CPU usage is calculated differently _(compatible with Windows OS)_.
 - Use native `fetch` method.
-
-
-## 📝 License
-
-[The MIT License](LICENSE) - Copyright © 2023 [Alexandre Genet](https://github.com/aegenet).
 
 
 ## 💾 Installation
@@ -56,10 +51,43 @@ await vigilReporter.stop();
 await vigilReporter.stop({ flush: true });
 ```
 
+## 🖹 API
+
+```typescript
+/**
+ * Yet Another Vigil Reporter
+ */
+export interface IYaVigilReporter {
+  /** Start the Vigil Reporter */
+  start(args?: { ensure?: boolean }): Promise<void>;
+
+  /** Stop the Vigil Reporter */
+  stop(args?: { flush?: boolean }): Promise<void>;
+
+  /** Stop the Vigil Reporter (legacy way) */
+  end(args?: { flush?: boolean; done?: (error?: Error) => void }): Promise<void>;
+
+  /** Cron is running ? */
+  get isRunning(): boolean;
+
+  /** Manual reporting */
+  report(args?: { /** @default true */ reThrow?: boolean }): Promise<YaVigilReportResult>;
+
+  /** Flush the replica */
+  flush(args?: { /** @default true */ reThrow?: boolean; timeout?: number }): Promise<{
+    error?: Error;
+  }>;
+}
+```
 
 # Coverage
-[![codecov](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graph/badge.svg?token=PLACEHOLDER)](https://codecov.io/gh/aegenet/ya-vigil-reporter)
+[![codecov](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graph/badge.svg?token=NRN5ODOY91)](https://codecov.io/gh/aegenet/ya-vigil-reporter)
 
-![Coverage sunburst](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graphs/sunburst.svg?token=PLACEHOLDER)
+![Coverage sunburst](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graphs/sunburst.svg?token=NRN5ODOY91)
 
-![Coverage tree](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graphs/tree.svg?token=PLACEHOLDER)
+![Coverage tree](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graphs/tree.svg?token=NRN5ODOY91)
+
+
+## 📝 License
+
+[The MIT License](LICENSE) - Copyright © 2023 [Alexandre Genet](https://github.com/aegenet).

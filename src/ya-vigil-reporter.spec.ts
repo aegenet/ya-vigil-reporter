@@ -1,7 +1,8 @@
 import * as assert from 'node:assert';
-import { YaVigilReporter } from './index';
+import { type YaVigilReportResult, YaVigilReporter, type IYaVigilReporter } from './index';
 import { type FastifyInstance } from 'fastify';
-import { createFakeVigilServer } from './create-fake-vigil-server.spec';
+import { createFakeVigilServer } from './tests/create-fake-vigil-server.spec';
+import { delay } from './utils/ya-workload.spec';
 
 describe('ya-vigil-reporter', () => {
   let server: FastifyInstance;
@@ -22,6 +23,7 @@ describe('ya-vigil-reporter', () => {
   });
 
   after(async () => {
+    server.server.closeAllConnections();
     await server.close();
   });
 
@@ -69,11 +71,23 @@ describe('ya-vigil-reporter', () => {
   });
 
   describe('cron', () => {
-    async function delay(duration: number) {
-      await new Promise(resolve => setTimeout(resolve, duration));
-    }
-
     it('Classic', async () => {
+      const vigilReporter: IYaVigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'my-backend',
+        replica_id: 'the-one',
+        // interval: 30,
+        // console: console
+      });
+      await vigilReporter.start();
+      assert.ok(vigilReporter.isRunning);
+      await vigilReporter.stop();
+      assert.ok(!vigilReporter.isRunning);
+    });
+
+    it('Stop & flush', async () => {
       const vigilReporter = new YaVigilReporter({
         url,
         token: '...',
@@ -85,8 +99,50 @@ describe('ya-vigil-reporter', () => {
       });
       await vigilReporter.start();
       assert.ok(vigilReporter.isRunning);
-      await vigilReporter.stop();
-      assert.ok(!vigilReporter.isRunning);
+      await vigilReporter.stop({
+        flush: true,
+      });
+    });
+
+    it('End old way', async () => {
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'my-backend',
+        replica_id: 'the-one',
+        interval: 30,
+        // console: console
+      });
+      await vigilReporter.start();
+      assert.ok(vigilReporter.isRunning);
+      await vigilReporter.end({
+        done: err => {
+          assert.ok(!err);
+          assert.ok(!vigilReporter.isRunning);
+        },
+      });
+      await vigilReporter.end();
+    });
+
+    it('End old way, flush fail', async () => {
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'invalid',
+        node_id: 'my-backend',
+        replica_id: 'the-one',
+        interval: 30,
+        // console: console
+      });
+      await vigilReporter.start();
+      assert.ok(vigilReporter.isRunning);
+      await vigilReporter.end({
+        done: err => {
+          assert.ok(err);
+          assert.ok(!vigilReporter.isRunning);
+        },
+      });
     });
 
     it('Delay', async () => {
@@ -140,6 +196,28 @@ describe('ya-vigil-reporter', () => {
       } catch (error) {
         assert.strictEqual((error as Error).message, 'Bad Request (400): Invalid node_id!');
       }
+    });
+
+    it('onTick', async () => {
+      const reports: YaVigilReportResult[] = [];
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'my-backend',
+        replica_id: 'the-one',
+        interval: 1,
+        onTick(data) {
+          reports.push(data);
+        },
+        // console: console
+      });
+      await vigilReporter.start();
+      assert.ok(vigilReporter.isRunning);
+      await delay(3000);
+      assert.strictEqual(reports.length, 2);
+      await vigilReporter.stop();
+      assert.ok(!vigilReporter.isRunning);
     });
   });
 
@@ -241,6 +319,36 @@ describe('ya-vigil-reporter', () => {
       assert.ok(result.error);
       assert.strictEqual(errors.length, 2);
     });
+
+    it('Report Timeout!', async () => {
+      const errors: string[] = [];
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'timeout',
+        node_id: 'my-backend',
+        replica_id: 'the-one',
+        interval: 5,
+        // console: console
+        logger: {
+          error(message) {
+            errors.push(message);
+          },
+        },
+      });
+
+      try {
+        await vigilReporter.report();
+        throw new Error('Must fail!');
+      } catch (error) {
+        assert.strictEqual((error as Error).message, 'This operation was aborted');
+        assert.strictEqual(errors.length, 1);
+      }
+
+      const result = await vigilReporter.report({ reThrow: false });
+      assert.ok(result.error);
+      assert.strictEqual(errors.length, 2);
+    });
   });
 
   describe('flush', () => {
@@ -286,6 +394,44 @@ describe('ya-vigil-reporter', () => {
       const result = await vigilReporter.flush({ reThrow: false });
       assert.ok(result.error);
       assert.strictEqual(errors.length, 2);
+    });
+
+    it('Flush Timeout!', async () => {
+      const errors: string[] = [];
+      const infos: string[] = [];
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'timeout',
+        node_id: 'my-backend',
+        replica_id: 'the-one',
+        interval: 5,
+        // console: console
+        logger: {
+          error(message) {
+            errors.push(message);
+          },
+          info(message) {
+            infos.push(message);
+          },
+        },
+      });
+
+      try {
+        await vigilReporter.flush({
+          timeout: 1000,
+        });
+        throw new Error('Must fail!');
+      } catch (error) {
+        assert.strictEqual((error as Error).message, 'This operation was aborted');
+        assert.strictEqual(errors.length, 1);
+        assert.strictEqual(infos.length, 1);
+      }
+      await vigilReporter.flush({ reThrow: false, timeout: 1000 });
+      const result = await vigilReporter.flush({ reThrow: false, timeout: 1000 });
+      assert.ok(result.error);
+      assert.strictEqual(errors.length, 3);
+      assert.strictEqual(infos.length, 3);
     });
   });
 });
