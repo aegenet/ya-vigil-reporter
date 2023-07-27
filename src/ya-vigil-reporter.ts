@@ -79,11 +79,12 @@ export class YaVigilReporter implements IYaVigilReporter {
       this._options.logger?.info?.('ya-vigil-reporter.stop');
       clearInterval(this._cron);
       this._cron = undefined;
+
+      if (args?.flush) {
+        await this.flush();
+      }
+      this._currentCpuUsage = undefined;
     }
-    if (args?.flush) {
-      await this.flush();
-    }
-    this._currentCpuUsage = undefined;
   }
 
   /** @inheritdoc */
