@@ -11,7 +11,7 @@ An alternative to [`node-vigil-reporter`](https://github.com/valeriansaliou/node
 
 ## ≠ Notable difference with `node-vigil-reporter`
 
-- `ya-vigil-reporter` __does not start automatically. You must call the `start` method.
+- `ya-vigil-reporter` does not start automatically. You must call the `start` method.
 - An `end` (_callback way_) method exists, but I don't recommend using it; use `stop` (_Promise way_) instead.
 - You can call the `report` method manually.
 - CPU usage is calculated differently _(compatible with Windows OS)_.
@@ -79,6 +79,48 @@ export interface IYaVigilReporter {
   }>;
 }
 ```
+
+```typescript
+export interface YaVigilReporterOptions {
+  /** `page_url` from Vigil `config.cfg` */
+  url: string;
+
+  /** `reporter_token` from Vigil `config.cfg` */
+  token: string;
+
+  /** Probe ID containing the parent Node for Replica */
+  probe_id: string;
+
+  /** Node ID containing Replica */
+  node_id: string;
+
+  /** Replica ID */
+  replica_id: string;
+  /**
+   * Reporting interval in seconds
+   *
+   * @default 30
+   *
+   */
+  interval?: number;
+
+  /**
+   * Overwrite logger
+   *
+   * Set to `null` (and not `undefined`) to disabled the logger
+   *
+   * @default console
+   */
+  logger?: YaVigilReporterLogger | undefined | null;
+
+  /** (legacy) Alias of `logger` options */
+  console?: YaVigilReporterLogger | undefined | null;
+
+  /** OnTick */
+  onTick?: (data: YaVigilReportResult) => void;
+}
+```
+
 
 # Coverage
 [![codecov](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graph/badge.svg?token=NRN5ODOY91)](https://codecov.io/gh/aegenet/ya-vigil-reporter)

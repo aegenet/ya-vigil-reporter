@@ -4,12 +4,16 @@ import type { YaVigilReporterLogger } from './ya-vigil-reporter-logger';
 export interface YaVigilReporterOptions {
   /** `page_url` from Vigil `config.cfg` */
   url: string;
+
   /** `reporter_token` from Vigil `config.cfg` */
   token: string;
+
   /** Probe ID containing the parent Node for Replica */
   probe_id: string;
+
   /** Node ID containing Replica */
   node_id: string;
+
   /** Replica ID */
   replica_id: string;
   /**
@@ -19,6 +23,7 @@ export interface YaVigilReporterOptions {
    *
    */
   interval?: number;
+
   /**
    * Overwrite logger
    *
