@@ -341,7 +341,7 @@ describe('ya-vigil-reporter', () => {
         await vigilReporter.report();
         throw new Error('Must fail!');
       } catch (error) {
-        assert.strictEqual((error as Error).message, 'This operation was aborted');
+        assert.ok((error as Error).message === 'This operation was aborted' || (error as Error).message === 'The operation was aborted.');
         assert.strictEqual(errors.length, 1);
       }
 
@@ -423,7 +423,7 @@ describe('ya-vigil-reporter', () => {
         });
         throw new Error('Must fail!');
       } catch (error) {
-        assert.strictEqual((error as Error).message, 'This operation was aborted');
+        assert.ok((error as Error).message === 'This operation was aborted' || (error as Error).message === 'The operation was aborted.');
         assert.strictEqual(errors.length, 1);
         assert.strictEqual(infos.length, 1);
       }

@@ -65,7 +65,7 @@
   },
   "scripts": {
     "clean": "rimraf ./build ./coverage ./.nyc_output ./node_modules",
-    "test": "yarn tsc && nyc ts-mocha src/**/*.spec.ts --timeout 10000",
+    "test": "yarn tsc && nyc ts-mocha ./src/**/*.spec.ts --timeout 10000",
     "lint": "node ./node_modules/eslint/bin/eslint ./src/**/*.{js,ts,tsx}",
     "lint:fix": "node ./node_modules/eslint/bin/eslint ./src/**/*.{js,ts,tsx} --fix",
     "cover:report": "node ./node_modules/nyc/bin/nyc -t ./coverage report --reporter html --reporter json --reporter text-summary",
