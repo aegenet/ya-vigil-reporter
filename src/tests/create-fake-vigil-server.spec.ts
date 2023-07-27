@@ -3,7 +3,7 @@ import { delay } from '../utils/ya-workload.spec';
 
 export function createFakeVigilServer() {
   const server = fastify({ logger: true });
-  server.post('/reporter/:probe_id/:node_id', async (request: FastifyRequest, reply: FastifyReply) => {
+  server.post('/reporter/:probe_id/:node_id/', async (request: FastifyRequest, reply: FastifyReply) => {
     const { probe_id, node_id } = request.params as any;
     const { replica, interval, load } = request.body as any;
 
@@ -41,7 +41,7 @@ export function createFakeVigilServer() {
       reply.status(400).send((error as Error).message);
     }
   });
-  server.delete('/reporter/:probe_id/:node_id/:replica', async (request: FastifyRequest, reply: FastifyReply) => {
+  server.delete('/reporter/:probe_id/:node_id/:replica/', async (request: FastifyRequest, reply: FastifyReply) => {
     const { probe_id, node_id, replica } = request.params as any;
 
     try {

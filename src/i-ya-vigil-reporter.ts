@@ -16,7 +16,7 @@ export interface IYaVigilReporter {
   /** Cron is running ? */
   get isRunning(): boolean;
 
-  /** Manual reporting */
+  /** Report the replica */
   report(args?: { /** @default true */ reThrow?: boolean }): Promise<YaVigilReportResult>;
 
   /** Flush the replica */

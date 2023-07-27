@@ -71,7 +71,7 @@ export interface IYaVigilReporter {
   /** Cron is running ? */
   get isRunning(): boolean;
 
-  /** Manual reporting */
+  /** Report the replica */
   report(args?: { /** @default true */ reThrow?: boolean }): Promise<YaVigilReportResult>;
 
   /** Flush the replica */
@@ -89,14 +89,15 @@ export interface YaVigilReporterOptions {
   /** `reporter_token` from Vigil `config.cfg` */
   token: string;
 
-  /** Probe ID containing the parent Node for Replica */
-  probe_id: string;
-
-  /** Node ID containing Replica */
+  /** The parent node of the reporting replica */
   node_id: string;
 
-  /** Replica ID */
+  /** The parent probe of the node */
+  probe_id: string;
+
+  /** The replica unique identifier (eg. the server LAN IP) */
   replica_id: string;
+
   /**
    * Reporting interval in seconds
    *
@@ -122,6 +123,10 @@ export interface YaVigilReporterOptions {
 }
 ```
 
+## Vigil HTTP API Specifications
+
+- [Vigil Reporter HTTP API](https://github.com/valeriansaliou/vigil/blob/master/PROTOCOL.md#vigil-reporter-http-api) protocol specifications.
+- [Vigil Manager HTTP API](https://github.com/valeriansaliou/vigil/blob/master/PROTOCOL.md#vigil-manager-http-api) protocol specifications.
 
 # Coverage
 [![codecov](https://codecov.io/gh/aegenet/ya-vigil-reporter/branch/main/graph/badge.svg?token=NRN5ODOY91)](https://codecov.io/gh/aegenet/ya-vigil-reporter)

@@ -8,14 +8,15 @@ export interface YaVigilReporterOptions {
   /** `reporter_token` from Vigil `config.cfg` */
   token: string;
 
-  /** Probe ID containing the parent Node for Replica */
-  probe_id: string;
-
-  /** Node ID containing Replica */
+  /** The parent node of the reporting replica */
   node_id: string;
 
-  /** Replica ID */
+  /** The parent probe of the node */
+  probe_id: string;
+
+  /** The replica unique identifier (eg. the server LAN IP) */
   replica_id: string;
+
   /**
    * Reporting interval in seconds
    *

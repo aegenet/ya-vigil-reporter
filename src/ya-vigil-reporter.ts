@@ -39,7 +39,7 @@ export class YaVigilReporter implements IYaVigilReporter {
     if (!baseURL.endsWith('/')) {
       baseURL += '/';
     }
-    baseURL += `reporter/${encodeURIComponent(probe_id)}/${encodeURIComponent(node_id)}`;
+    baseURL += `reporter/${encodeURIComponent(probe_id)}/${encodeURIComponent(node_id)}/`;
     this._baseURL = baseURL;
     this._reporterAuthz = `Basic ${Buffer.from(':' + token).toString('base64')}`;
     this._reporterHeader = {
@@ -90,12 +90,18 @@ export class YaVigilReporter implements IYaVigilReporter {
   /** @inheritdoc */
   public async end(args?: { flush?: boolean; done?: (error?: Error) => void }): Promise<void> {
     args ||= {};
+    let doneFunc = args!.done;
     await this.stop(args)
-      .then(() => {
-        args!.done?.();
-      })
       .catch(error => {
-        args!.done?.(error);
+        try {
+          doneFunc?.(error);
+        } finally {
+          // avoid another call if doneFunc throw an error
+          doneFunc = undefined;
+        }
+      })
+      .then(() => {
+        doneFunc?.();
       });
   }
 
@@ -166,7 +172,7 @@ export class YaVigilReporter implements IYaVigilReporter {
       this._options.logger?.info?.('ya-vigil-reporter.flush');
 
       await yaFetchWTimeout(
-        this._baseURL + '/' + encodeURIComponent(this._options.replica_id),
+        this._baseURL + encodeURIComponent(this._options.replica_id) + '/',
         {
           method: 'DELETE',
           headers: {

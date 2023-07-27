@@ -142,6 +142,7 @@ describe('ya-vigil-reporter', () => {
           assert.ok(err);
           assert.ok(!vigilReporter.isRunning);
         },
+        flush: true,
       });
     });
 
