@@ -10,7 +10,7 @@ An alternative to [`node-vigil-reporter`](https://github.com/valeriansaliou/node
 >  _"Vigil is an open-source Status Page you can host on your infrastructure, used to monitor all your servers and apps, and visible to your users (on a domain of your >  choice, eg. status.example.com)."_ https://github.com/valeriansaliou/vigil
 
 
-## ≠ Notable difference with `node-vigil-reporter`
+## ≠ Notable differences with `node-vigil-reporter`
 
 - `ya-vigil-reporter` does not start automatically. You must call the `start` method.
 - An `end` (_callback way_) method exists, but I don't recommend using it; use `stop` (_Promise way_) instead.
