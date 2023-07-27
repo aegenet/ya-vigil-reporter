@@ -179,13 +179,11 @@ export class YaVigilReporter implements IYaVigilReporter {
         error: undefined,
       };
     } catch (error) {
-      console.dir(error);
       if (timeoutToken) {
         clearTimeout(timeoutToken);
       }
       this._options.logger?.error('ya-vigil-reporter.flush', error);
       if (args?.reThrow) {
-        console.log('reThrow');
         throw error;
       } else {
         return {
