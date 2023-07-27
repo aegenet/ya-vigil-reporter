@@ -1,0 +1,7 @@
+build/
+yarn-error.log
+dist/
+node_modules/
+.nyc_output/
+coverage/
+undefined/

@@ -1,0 +1,30 @@
+{
+  // Utilisez IntelliSense pour en savoir plus sur les attributs possibles.
+  // Pointez pour afficher la description des attributs existants.
+  // Pour plus d'informations, visitez : https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "protocol": "inspector",
+      "request": "launch",
+      "name": "Mocha Tests",
+      "program": "${cwd}/node_modules/ts-mocha/bin/ts-mocha",
+      "args": [
+        "src/**/*.spec.ts",
+        "--timeout", "100000"
+      ],
+      "runtimeExecutable": null,
+      "env" : {
+      },
+      "internalConsoleOptions": "openOnSessionStart",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "cwd": "${workspaceFolder}",
+      "sourceMaps": true,
+      "outputCapture": "std",
+      "console": "internalConsole"
+    }
+  ]
+}

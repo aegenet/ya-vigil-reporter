@@ -1,0 +1,79 @@
+{
+  "name": "@aegenet/ya-vigil-reporter",
+  "description": "Yet Another Vigil Reporter",
+  "version": "999.0.0",
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "exports": {
+    "node": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    },
+    "default": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "typings": "./dist/bundle.d.ts",
+  "files": [
+    "dist"
+  ],
+  "author": "Alexandre Genet",
+  "repository": "https://github.com/aegenet/ya-vigil-reporter",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "nyc": {
+    "check-coverage": true,
+    "exclude": "**/*.spec.ts",
+    "reporter": [
+      "html",
+      "lcov",
+      "text",
+      "text-summary"
+    ],
+    "report-dir": "coverage"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.0",
+    "@types/node": "^20.4.5",
+    "@typescript-eslint/eslint-plugin": "^6.2.0",
+    "@typescript-eslint/parser": "^6.2.0",
+    "codecov": "^3.8.3",
+    "eslint": "^8.45.0",
+    "eslint-config-prettier": "^8.9.0",
+    "eslint-plugin-prettier": "^5.0.0",
+    "fastify": "^4.20.0",
+    "json": "^11.0.0",
+    "mocha": "^10.1.0",
+    "nyc": "^15.1.0",
+    "prettier": "^3.0.0",
+    "rimraf": "^5.0.1",
+    "rollup-plugin-dts": "^5.0.0",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^5.1.6",
+    "vite": "^4.4.7"
+  },
+  "dependencies": {},
+  "pre-commit": [
+    "lint"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "scripts": {
+    "clean": "rimraf ./build ./coverage ./.nyc_output ./node_modules",
+    "test": "yarn tsc && nyc ts-mocha src/**/*.spec.ts --timeout 10000",
+    "lint": "node ./node_modules/eslint/bin/eslint ./src/**/*.{js,ts,tsx}",
+    "lint:fix": "node ./node_modules/eslint/bin/eslint ./src/**/*.{js,ts,tsx} --fix",
+    "cover:report": "node ./node_modules/nyc/bin/nyc -t ./coverage report --reporter html --reporter json --reporter text-summary",
+    "codecov": "./node_modules/.bin/codecov",
+    "build:version": "node ./.build/build-flow.js build",
+    "publish:version": "node ./.build/build-flow.js publish",
+    "build": "yarn tsc && yarn run build:vite && yarn run build:dts --bundleConfigAsCjs",
+    "tsc": "rimraf build && node ./node_modules/typescript/bin/tsc",
+    "build:vite": "rimraf dist && node ./node_modules/vite/bin/vite build",
+    "build:dts": "rollup -c rollup.config.dts.js"
+  }
+}
