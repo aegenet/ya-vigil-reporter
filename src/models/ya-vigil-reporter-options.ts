@@ -37,8 +37,17 @@ export interface YaVigilReporterOptions {
   /** (legacy) Alias of `logger` options */
   console?: YaVigilReporterLogger | undefined | null;
 
-  /** OnTick */
+  /** On Tick */
   onTick?: (data: YaVigilReportResult) => void;
+
+  /** On Report Error */
+  onReportError?: (error: unknown) => void;
+
+  /** On Fetch Error */
+  onFlushError?: (error: unknown) => void;
+
+  /** Format the fetch error message */
+  formatFetchError?: (resp: Response) => Promise<string> | string;
 }
 
 export interface YaVigilReportResult {

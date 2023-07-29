@@ -2,7 +2,7 @@ import { assertVigilReporterOptions, YaVigilReportResult, type YaVigilReporterOp
 import { YaWorkload, type YaWorkloadResult } from './utils/ya-workload';
 import type { YaVigilReportBody } from './models/ya-vigil-report-body';
 import type { IYaVigilReporter } from './i-ya-vigil-reporter';
-import { yaFetchWTimeout } from './utils/ya-fetch-w-timeout';
+import { type YaFetchWTimeoutOptions, yaFetchWTimeout } from './utils/ya-fetch-w-timeout';
 
 /**
  * Yet Another Vigil Reporter
@@ -14,10 +14,11 @@ export class YaVigilReporter implements IYaVigilReporter {
   private readonly _workload: YaWorkload = new YaWorkload();
   private readonly _baseURL: string;
   private readonly _reporterAuthz: string;
-  private _reporterHeader: { Authorization: string; 'Content-Type': string };
+  private readonly _reporterHeader: { Authorization: string; 'Content-Type': string };
+  private readonly _reportFetchWAbortOpts: YaFetchWTimeoutOptions;
+  private readonly _intervalMs: number;
+  private readonly _timeoutMs: number;
   private _currentCpuUsage?: YaWorkloadResult;
-  private _intervalMs: number;
-  private _timeoutMs: number;
   private _cron?: NodeJS.Timer;
 
   constructor(private readonly _options: YaVigilReporterOptions) {
@@ -45,6 +46,10 @@ export class YaVigilReporter implements IYaVigilReporter {
     this._reporterHeader = {
       Authorization: this._reporterAuthz,
       'Content-Type': 'application/json; charset=utf-8',
+    };
+    this._reportFetchWAbortOpts = {
+      timeout: this._timeoutMs,
+      formatErrorMessage: this._options.formatFetchError,
     };
   }
 
@@ -117,7 +122,6 @@ export class YaVigilReporter implements IYaVigilReporter {
     args ||= {};
     args.reThrow ??= true;
     let reportBody: YaVigilReportBody | undefined;
-    let timeoutToken;
     try {
       if (!this._currentCpuUsage) {
         // init
@@ -137,7 +141,7 @@ export class YaVigilReporter implements IYaVigilReporter {
           headers: this._reporterHeader,
           body: JSON.stringify(reportBody),
         },
-        this._timeoutMs
+        this._reportFetchWAbortOpts
       );
 
       return {
@@ -145,10 +149,8 @@ export class YaVigilReporter implements IYaVigilReporter {
         bodySent: reportBody,
       };
     } catch (error) {
-      if (timeoutToken) {
-        clearTimeout(timeoutToken);
-      }
       this._options.logger?.error('ya-vigil-reporter.report', error);
+      this._options.onReportError?.(error);
       if (args?.reThrow) {
         throw error;
       } else {
@@ -167,7 +169,6 @@ export class YaVigilReporter implements IYaVigilReporter {
     args ||= {};
     args.reThrow ??= true;
 
-    let timeoutToken;
     try {
       this._options.logger?.info?.('ya-vigil-reporter.flush');
 
@@ -179,16 +180,17 @@ export class YaVigilReporter implements IYaVigilReporter {
             Authorization: this._reporterAuthz,
           },
         },
-        args.timeout || YaVigilReporter._DEFAULT_TIMEOUT_MS
+        {
+          timeout: args.timeout || YaVigilReporter._DEFAULT_TIMEOUT_MS,
+          formatErrorMessage: this._options.formatFetchError,
+        }
       );
       return {
         error: undefined,
       };
     } catch (error) {
-      if (timeoutToken) {
-        clearTimeout(timeoutToken);
-      }
       this._options.logger?.error('ya-vigil-reporter.flush', error);
+      this._options.onFlushError?.(error);
       if (args?.reThrow) {
         throw error;
       } else {

@@ -435,4 +435,229 @@ describe('ya-vigil-reporter', () => {
       assert.strictEqual(infos.length, 3);
     });
   });
+
+  describe('Custom logger', () => {
+    it('Invalid node_id - custom logger', async () => {
+      const childLog = server.log.child({ context: 'vigil' });
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'invalid',
+        replica_id: 'the-one',
+        interval: 1,
+        logger: {
+          info: (message, data) => {
+            childLog.trace(data, message);
+          },
+          error: (message, data) => {
+            childLog.error(data, message);
+          },
+          warn: (message, data) => {
+            childLog.warn(data, message);
+          },
+        }, // Console instance if you need to debug issues
+      });
+      await vigilReporter.start();
+      assert.ok(vigilReporter.isRunning);
+      await delay(3000);
+      await vigilReporter.stop();
+      assert.ok(!vigilReporter.isRunning);
+    });
+
+    it('Report Timeout!', async () => {
+      const childLog = server.log.child({ context: 'vigil' });
+      const errors: string[] = [];
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'timeout',
+        node_id: 'my-backend',
+        replica_id: 'the-one',
+        interval: 5,
+        // console: console
+        logger: {
+          error(message, data) {
+            childLog.error(data, message);
+            errors.push(message);
+          },
+        },
+      });
+
+      try {
+        await vigilReporter.report();
+        throw new Error('Must fail!');
+      } catch (error) {
+        assert.ok((error as Error).message === 'This operation was aborted' || (error as Error).message === 'The operation was aborted.');
+        assert.strictEqual(errors.length, 1);
+      }
+    });
+  });
+
+  describe('onReportError', () => {
+    it('Simple', async () => {
+      const errors: unknown[] = [];
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'invalid',
+        replica_id: 'the-one',
+        interval: 1,
+        onReportError(error) {
+          assert.strictEqual((error as Error).message, 'Bad Request (400): Invalid node_id!');
+          errors.push(error);
+        },
+      });
+      try {
+        await vigilReporter.report();
+        throw new Error('Must fail');
+      } catch (error) {
+        assert.strictEqual((error as Error).message, 'Bad Request (400): Invalid node_id!');
+      }
+      assert.strictEqual(errors.length, 1);
+    });
+
+    it('rethrow false', async () => {
+      const errors: unknown[] = [];
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'invalid',
+        replica_id: 'the-one',
+        interval: 1,
+        onReportError(error) {
+          assert.strictEqual((error as Error).message, 'Bad Request (400): Invalid node_id!');
+          errors.push(error);
+        },
+      });
+      await vigilReporter.report({
+        reThrow: false,
+      });
+      assert.strictEqual(errors.length, 1);
+    });
+  });
+
+  describe('onFlushError', () => {
+    it('Simple', async () => {
+      const errors: unknown[] = [];
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'invalid',
+        replica_id: 'the-one',
+        interval: 1,
+        onFlushError(error) {
+          assert.strictEqual((error as Error).message, 'Bad Request (400): Invalid node_id!');
+          errors.push(error);
+        },
+      });
+      try {
+        await vigilReporter.flush();
+        throw new Error('Must fail');
+      } catch (error) {
+        assert.strictEqual((error as Error).message, 'Bad Request (400): Invalid node_id!');
+      }
+      assert.strictEqual(errors.length, 1);
+    });
+
+    it('rethrow false', async () => {
+      const errors: unknown[] = [];
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'invalid',
+        replica_id: 'the-one',
+        interval: 1,
+        onFlushError(error) {
+          assert.strictEqual((error as Error).message, 'Bad Request (400): Invalid node_id!');
+          errors.push(error);
+        },
+      });
+      await vigilReporter.flush({
+        reThrow: false,
+      });
+      assert.strictEqual(errors.length, 1);
+    });
+  });
+
+  describe('Custom format fetch error', () => {
+    it('Simple', async () => {
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'invalid',
+        replica_id: 'the-one',
+        interval: 1,
+        formatFetchError: resp => `hide this one`,
+      });
+      try {
+        await vigilReporter.report();
+        throw new Error('Must fail');
+      } catch (error) {
+        assert.strictEqual((error as Error).message, 'hide this one');
+      }
+    });
+
+    it('Get resp', async () => {
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'invalid',
+        replica_id: 'the-one',
+        interval: 1,
+        formatFetchError: async resp => {
+          return await resp.text().catch(() => resp.statusText);
+        },
+      });
+      try {
+        await vigilReporter.report();
+        throw new Error('Must fail');
+      } catch (error) {
+        assert.strictEqual((error as Error).message, 'Invalid node_id!');
+      }
+    });
+
+    it('Without custom format', async () => {
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'invalid_whtml',
+        node_id: 'invalid',
+        replica_id: 'the-one',
+        interval: 1,
+      });
+      try {
+        await vigilReporter.report();
+        throw new Error('Must fail');
+      } catch (error) {
+        assert.strictEqual((error as Error).message, 'Method Not Allowed (405)');
+      }
+    });
+
+    it('with custom format', async () => {
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'invalid_whtml',
+        node_id: 'invalid',
+        replica_id: 'the-one',
+        interval: 1,
+        formatFetchError: async resp => {
+          return await resp.text().catch(() => resp.statusText);
+        },
+      });
+      try {
+        await vigilReporter.report();
+        throw new Error('Must fail');
+      } catch (error) {
+        assert.strictEqual((error as Error).message, '<html><head></head><body>Not mutant allowed</body></html>');
+      }
+    });
+  });
 });

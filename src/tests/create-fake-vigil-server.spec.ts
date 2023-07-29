@@ -30,6 +30,10 @@ export function createFakeVigilServer() {
       if (probe_id === 'invalid') {
         throw new Error('Invalid probe_id!');
       }
+      if (probe_id === 'invalid_whtml') {
+        reply.status(405).type('text/html').send('<html><head></head><body>Not mutant allowed</body></html>');
+        return;
+      }
       if (node_id === 'invalid') {
         throw new Error('Invalid node_id!');
       }
@@ -59,6 +63,10 @@ export function createFakeVigilServer() {
       }
       if (probe_id === 'invalid') {
         throw new Error('Invalid probe_id!');
+      }
+      if (probe_id === 'invalid_whtml') {
+        reply.status(405).type('text/html').send('<html><head></head><body>Not mutant allowed</body></html>');
+        return;
       }
       if (node_id === 'invalid') {
         throw new Error('Invalid node_id!');
