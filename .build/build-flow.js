@@ -8,7 +8,7 @@ const tasks = {
       version = process.env.GITHUB_REF_NAME;
     } else if (process.env.GITHUB_REF_NAME) {
       // workflow github
-      version = `999.${new Date().getTime()}.0`;
+      version = `0.${new Date().getTime()}.0-dev`;
     }
 
     if (version) {
