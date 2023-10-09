@@ -5,26 +5,14 @@ export type YaFetchWTimeoutOptions = {
 
 /** Fetch with Timeout */
 export async function yaFetchWTimeout(input: RequestInfo | URL, init: RequestInit, options: YaFetchWTimeoutOptions): Promise<Response> {
-  let timeoutToken;
-  try {
-    const controller = new AbortController();
-    timeoutToken = setTimeout(() => controller.abort(), options.timeout);
-    const resp = await fetch(input, {
-      ...init,
-      signal: controller.signal,
-    });
-    clearTimeout(timeoutToken);
-    timeoutToken = undefined;
-    if (resp && !resp.ok) {
-      throw new Error(options.formatErrorMessage ? await options.formatErrorMessage(resp) : await _defaultFormatErrorMessage(resp));
-    }
-    return resp;
-  } catch (error) {
-    if (timeoutToken) {
-      clearTimeout(timeoutToken);
-    }
-    throw error;
+  const resp = await fetch(input, {
+    ...init,
+    signal: AbortSignal.timeout(options.timeout),
+  });
+  if (resp && !resp.ok) {
+    throw new Error(options.formatErrorMessage ? await options.formatErrorMessage(resp) : await _defaultFormatErrorMessage(resp));
   }
+  return resp;
 }
 
 async function _defaultFormatErrorMessage(resp: Response): Promise<string> {

@@ -1,3 +1,4 @@
+import { setInterval, clearInterval } from 'node:timers';
 import { assertVigilReporterOptions, YaVigilReportResult, type YaVigilReporterOptions } from './models/ya-vigil-reporter-options';
 import { YaWorkload, type YaWorkloadResult } from './utils/ya-workload';
 import type { YaVigilReportBody } from './models/ya-vigil-report-body';
@@ -19,7 +20,7 @@ export class YaVigilReporter implements IYaVigilReporter {
   private readonly _intervalMs: number;
   private readonly _timeoutMs: number;
   private _currentCpuUsage?: YaWorkloadResult;
-  private _cron?: NodeJS.Timer;
+  private _cron?: NodeJS.Timeout;
 
   constructor(private readonly _options: YaVigilReporterOptions) {
     // legacy
