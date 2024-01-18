@@ -29,6 +29,8 @@ npm i @aegenet/ya-vigil-reporter@~1
 
 ## 📝 Usage
 
+### Classic
+
 ```typescript
 import { YaVigilReporter } from '@aegenet/ya-vigil-reporter';
 
@@ -40,6 +42,41 @@ const vigilReporter = new YaVigilReporter({
   replica_id: "the-one",
   interval: 30,
   // logger: console,
+});
+
+await vigilReporter.start();
+
+/* ... */
+// stop the reporter
+await vigilReporter.stop();
+
+// or specify the flush options to teardown the replica
+await vigilReporter.stop({ flush: true });
+```
+
+
+### 📝 Custom fetch
+
+```typescript
+import { YaVigilReporter } from '@aegenet/ya-vigil-reporter';
+import { bFetch, type bFetchOptions } from '@aegenet/belt-fetch';
+
+// Async DNS & cache 1mn
+const bFetchOpts: bFetchOptions = {
+  dnsCacheTTL: 60000,
+};
+
+const vigilReporter = new YaVigilReporter({
+  url: "https://status.example.com",
+  token: "...",
+  probe_id: "api",
+  node_id: "my-backend", 
+  replica_id: "the-one",
+  interval: 30,
+  // logger: console,
+  fetch(input, init) {
+    return bFetch(input, init, bFetchOpts);
+  },
 });
 
 await vigilReporter.start();
@@ -129,6 +166,13 @@ export interface YaVigilReporterOptions {
 
   /** Format the fetch error message */
   formatFetchError?: (resp: Response) => Promise<string> | string;
+
+  /**
+   * fetch function
+   *
+   * @default globalThis.fetch
+   */
+  fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 ```
 

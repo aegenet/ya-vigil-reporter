@@ -1,18 +1,13 @@
-export type YaFetchWTimeoutOptions = {
-  timeout: number;
-  formatErrorMessage?: (resp: Response) => Promise<string> | string;
-};
-
-/** Fetch with Timeout */
-export async function yaFetchWTimeout(input: RequestInfo | URL, init: RequestInit, options: YaFetchWTimeoutOptions): Promise<Response> {
-  const resp = await fetch(input, {
-    ...init,
-    signal: AbortSignal.timeout(options.timeout),
-  });
+/** Ensure & format response */
+export async function ensureFetchResponse(
+  resp: Response,
+  options: {
+    formatErrorMessage?: (resp: Response) => Promise<string> | string;
+  }
+): Promise<void> {
   if (resp && !resp.ok) {
     throw new Error(options.formatErrorMessage ? await options.formatErrorMessage(resp) : await _defaultFormatErrorMessage(resp));
   }
-  return resp;
 }
 
 async function _defaultFormatErrorMessage(resp: Response): Promise<string> {

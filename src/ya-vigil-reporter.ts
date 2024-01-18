@@ -3,7 +3,7 @@ import { assertVigilReporterOptions, YaVigilReportResult, type YaVigilReporterOp
 import { YaWorkload, type YaWorkloadResult } from './utils/ya-workload';
 import type { YaVigilReportBody } from './models/ya-vigil-report-body';
 import type { IYaVigilReporter } from './i-ya-vigil-reporter';
-import { type YaFetchWTimeoutOptions, yaFetchWTimeout } from './utils/ya-fetch-w-timeout';
+import { ensureFetchResponse } from './utils/ensure-fetch-response';
 
 /**
  * Yet Another Vigil Reporter
@@ -16,7 +16,6 @@ export class YaVigilReporter implements IYaVigilReporter {
   private readonly _baseURL: string;
   private readonly _reporterAuthz: string;
   private readonly _reporterHeader: { Authorization: string; 'Content-Type': string };
-  private readonly _reportFetchWAbortOpts: YaFetchWTimeoutOptions;
   private readonly _intervalMs: number;
   private readonly _timeoutMs: number;
   private _currentCpuUsage?: YaWorkloadResult;
@@ -47,10 +46,6 @@ export class YaVigilReporter implements IYaVigilReporter {
     this._reporterHeader = {
       Authorization: this._reporterAuthz,
       'Content-Type': 'application/json; charset=utf-8',
-    };
-    this._reportFetchWAbortOpts = {
-      timeout: this._timeoutMs,
-      formatErrorMessage: this._options.formatFetchError,
     };
   }
 
@@ -135,14 +130,16 @@ export class YaVigilReporter implements IYaVigilReporter {
         load: this._currentCpuUsage || this._workload.getCurrentUsage(),
       };
 
-      await yaFetchWTimeout(
-        this._baseURL,
-        {
+      await ensureFetchResponse(
+        await this._fetch(this._baseURL, {
           method: 'POST',
           headers: this._reporterHeader,
           body: JSON.stringify(reportBody),
-        },
-        this._reportFetchWAbortOpts
+          signal: AbortSignal.timeout(this._timeoutMs),
+        }),
+        {
+          formatErrorMessage: this._options.formatFetchError,
+        }
       );
 
       return {
@@ -173,16 +170,15 @@ export class YaVigilReporter implements IYaVigilReporter {
     try {
       this._options.logger?.info?.('ya-vigil-reporter.flush');
 
-      await yaFetchWTimeout(
-        this._baseURL + encodeURIComponent(this._options.replica_id) + '/',
-        {
+      await ensureFetchResponse(
+        await this._fetch(this._baseURL + encodeURIComponent(this._options.replica_id) + '/', {
           method: 'DELETE',
           headers: {
             Authorization: this._reporterAuthz,
           },
-        },
+          signal: AbortSignal.timeout(args.timeout || YaVigilReporter._DEFAULT_TIMEOUT_MS),
+        }),
         {
-          timeout: args.timeout || YaVigilReporter._DEFAULT_TIMEOUT_MS,
           formatErrorMessage: this._options.formatFetchError,
         }
       );
@@ -200,5 +196,10 @@ export class YaVigilReporter implements IYaVigilReporter {
         };
       }
     }
+  }
+
+  /** fetch */
+  private get _fetch(): (input: RequestInfo | URL, init?: RequestInit) => Promise<Response> {
+    return this._options.fetch ?? globalThis.fetch;
   }
 }
