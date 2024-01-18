@@ -3,6 +3,7 @@ import { type YaVigilReportResult, YaVigilReporter, type IYaVigilReporter } from
 import { type FastifyInstance } from 'fastify';
 import { createFakeVigilServer } from './tests/create-fake-vigil-server.spec';
 import { delay } from './utils/ya-workload.spec';
+import { bFetch, type bFetchOptions } from '@aegenet/belt-fetch';
 
 describe('ya-vigil-reporter', () => {
   let server: FastifyInstance;
@@ -658,6 +659,35 @@ describe('ya-vigil-reporter', () => {
       } catch (error) {
         assert.strictEqual((error as Error).message, '<html><head></head><body>Not mutant allowed</body></html>');
       }
+    });
+  });
+
+  describe('Custom fetch', () => {
+    it('With bFetch', async () => {
+      const bFetchOpts: bFetchOptions = {
+        dnsCacheTTL: 1000,
+      };
+      const vigilReporter = new YaVigilReporter({
+        url,
+        token: '...',
+        probe_id: 'api',
+        node_id: 'my-backend',
+        replica_id: 'the-one',
+        interval: 30,
+        fetch(input, init) {
+          return bFetch(input, init, bFetchOpts);
+        },
+      });
+      const result = await vigilReporter.report();
+      assert.ok(!result.error);
+      assert.ok(result.bodySent);
+      assert.strictEqual(result.bodySent.replica, 'the-one');
+      assert.strictEqual(result.bodySent.interval, 30);
+      assert.ok(result.bodySent.load);
+      assert.ok(result.bodySent.load.cpu != null);
+      assert.ok(result.bodySent.load.ram != null);
+      assert.ok(typeof result.bodySent.load.cpu === 'number');
+      assert.ok(typeof result.bodySent.load.ram === 'number');
     });
   });
 });

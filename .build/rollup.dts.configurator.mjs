@@ -1,7 +1,7 @@
-const dts = require('rollup-plugin-dts');
-const path = require('node:path');
+import dts from 'rollup-plugin-dts';
+import path from 'node:path';
 
-module.exports = async function(options) {
+export default async function(options) {
   const folder = options.folder ? options.folder + '/' : '';
 
   return {

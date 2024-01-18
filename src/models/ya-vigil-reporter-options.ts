@@ -48,6 +48,13 @@ export interface YaVigilReporterOptions {
 
   /** Format the fetch error message */
   formatFetchError?: (resp: Response) => Promise<string> | string;
+
+  /**
+   * fetch function
+   *
+   * @default globalThis.fetch
+   */
+  fetch?: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 }
 
 export interface YaVigilReportResult {
